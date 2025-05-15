@@ -1,0 +1,21 @@
+{
+    "name": "MotorControl",
+    "version": "1.0.0",
+    "description": "Motor control library for OpenBot ESP32 robot chassis",
+    "keywords": "motor, robot, control, esp32, openbot",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/username/openbot-esp32.git"
+    },
+    "authors": [
+        {
+            "name": "User",
+            "email": "user@example.com",
+            "maintainer": true
+        }
+    ],
+    "license": "MIT",
+    "dependencies": {},
+    "frameworks": "arduino",
+    "platforms": "espressif32"
+} 
