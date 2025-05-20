@@ -131,4 +131,37 @@
  /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_hw_support/include/soc/esp32/spiram.h \
  /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/cores/esp32/io_pin_remap.h \
  /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/cores/esp32/Arduino.h \
- lib/MotorControl/MotorControl.h
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/cores/esp32/USBCDC.h \
+ lib/MotorControl/MotorControl.h lib/SensorControl/SensorControl.h \
+ lib/BLEComm/BLEComm.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEDevice.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/bt/host/bluedroid/api/include/api/esp_gap_ble_api.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/bt/host/bluedroid/api/include/api/esp_bt_defs.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/bt/host/bluedroid/api/include/api/esp_gattc_api.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/bt/host/bluedroid/api/include/api/esp_gatt_defs.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/bt/include/esp32/include/esp_bt.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_system/include/esp_task.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/freertos/include/esp_additions/freertos/FreeRTOSConfig.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEServer.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/bt/host/bluedroid/api/include/api/esp_gatts_api.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEUUID.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/bt/host/bluedroid/api/include/api/esp_gatt_defs.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEAdvertising.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/RTOS.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/tools/sdk/esp32/include/esp_ringbuf/include/freertos/ringbuf.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLECharacteristic.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEDescriptor.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEValue.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEService.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLESecurity.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEAddress.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEClient.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLERemoteService.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLERemoteCharacteristic.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLERemoteDescriptor.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEAdvertisedDevice.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEScan.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEUtils.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEServer.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLEUtils.h \
+ /Users/teslapatrick/.platformio/packages/framework-arduinoespressif32/libraries/BLE/src/BLE2902.h

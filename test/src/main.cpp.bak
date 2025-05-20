@@ -1,0 +1,40 @@
+#include <Arduino.h>
+#define Serial Serial0
+
+void setup() {
+    // 初始化串口，波特率115200
+    Serial.begin(115200);
+    delay(1000);  // 等待串口稳定
+    
+    // 发送测试消息
+    Serial.println("Serial Test Started");
+    Serial.println("Type something to echo back...");
+}
+
+void loop() {
+    // 检查是否有数据可读
+    if (Serial.available() > 0) {
+        // 读取一个字节
+        char inChar = Serial.read();
+        
+        // 回显收到的字符
+        Serial.print("Received: ");
+        Serial.println(inChar);
+        
+        // 如果是数字，计算其平方
+        if (isdigit(inChar)) {
+            int num = inChar - '0';
+            Serial.print("Square of ");
+            Serial.print(num);
+            Serial.print(" is ");
+            Serial.println(num * num);
+        }
+    }
+    
+    // 每秒发送一次心跳
+    static unsigned long lastHeartbeat = 0;
+    if (millis() - lastHeartbeat >= 1000) {
+        Serial.println("Heartbeat...");
+        lastHeartbeat = millis();
+    }
+} 
