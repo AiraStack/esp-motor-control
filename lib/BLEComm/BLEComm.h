@@ -2,10 +2,12 @@
 #define BLE_COMM_H
 
 #include <Arduino.h>
-#include <BLEDevice.h>
-#include <BLEServer.h>
-#include <BLEUtils.h>
-#include <BLE2902.h>
+// #include <BLEDevice.h>
+#include <NimBLEDevice.h>
+
+// #include <BLEServer.h>
+// #include <BLEUtils.h>
+// #include <BLE2902.h>
 
 #define Serial Serial0
 
@@ -62,7 +64,8 @@ private:
         BLEComm* _parent;
     public:
         MyServerCallbacks(BLEComm* parent) : _parent(parent) {}
-        void onConnect(BLEServer* bleServer, esp_ble_gatts_cb_param_t* param);
+        // void onConnect(BLEServer* bleServer, esp_ble_gatts_cb_param_t* param);
+        void onConnect(BLEServer* bleServer);
         void onDisconnect(BLEServer* bleServer);
     };
 

@@ -54,11 +54,5 @@ void setup() {
 }
 
 void loop() {
-    // 每秒发送一次心跳
-    static unsigned long lastHeartbeat = 0;
-    if (millis() - lastHeartbeat >= 1000) {
-        Serial.println("Heartbeat...");
-        lastHeartbeat = millis();
-    }
-    // Nothing else needed here for basic BLE echo
+    // Nothing needed here for basic BLE echo
 } 

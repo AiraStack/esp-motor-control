@@ -24,16 +24,16 @@ void BLEComm::init() {
 
     _pTxCharacteristic = pService->createCharacteristic(
         BLEUUID("9bf1103b-834c-47cf-b149-c9e4bcf778a7"),
-        BLECharacteristic::PROPERTY_NOTIFY
+        NIMBLE_PROPERTY::NOTIFY
     );
-    _pTxCharacteristic->addDescriptor(new BLE2902());
+    // _pTxCharacteristic->addDescriptor(new NimBLE2902());
 
     _pRxCharacteristic = pService->createCharacteristic(
         BLEUUID("06386c14-86ea-4d71-811c-48f97c58f8c9"),
-        BLECharacteristic::PROPERTY_WRITE_NR
+        NIMBLE_PROPERTY::WRITE_NR
     );
     _pRxCharacteristic->setCallbacks(new MyCallbacks(this));
-    _pRxCharacteristic->addDescriptor(new BLE2902());
+    // _pRxCharacteristic->addDescriptor(new NimBLE2902());
 
     pService->start();
 
@@ -95,7 +95,7 @@ void BLEComm::parseMessage() {
     _msgPart = HEADER;
 }
 
-void BLEComm::MyServerCallbacks::onConnect(BLEServer* bleServer, esp_ble_gatts_cb_param_t* param) {
+void BLEComm::MyServerCallbacks::onConnect(BLEServer* bleServer) {
     _parent->_deviceConnected = true;
     Serial.println("BT Connected");
 }
