@@ -1,0 +1,34 @@
+{
+    "name": "OpenBotProtocol",
+    "version": "1.0.0",
+    "description": "OpenBot ESP Car Control Protocol Library - A comprehensive protocol implementation for ESP-based robot car control",
+    "keywords": [
+        "robot",
+        "car",
+        "protocol", 
+        "openbot",
+        "esp32",
+        "control",
+        "communication"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/AiraStack/esp-motor-control"
+    },
+    "authors": [
+        {
+            "name": "AiraStack",
+            "maintainer": true
+        }
+    ],
+    "license": "MIT",
+    "homepage": "https://github.com/AiraStack/esp-motor-control",
+    "dependencies": [
+        {
+            "name": "ArduinoJson",
+            "version": "^6.21.0"
+        }
+    ],
+    "frameworks": "arduino",
+    "platforms": "espressif32"
+} 
