@@ -65,14 +65,17 @@ void onHeartbeatCommand(unsigned long interval) {
 
 // 发送数据回调 - 同时发送到Serial0和BLE
 void onSendData(const char* data) {
+    Serial.printf("DEBUG: Sending data: '%s'\n", data);
+    
     // 发送到串口
     Serial.print(data);
     
 #if (HAS_BLUETOOTH)
     // 发送到蓝牙（如果连接）
-    if (ble.isConnected()) {
+    // 暂时禁用BLE自动响应，避免spam
+    /*if (ble.isConnected()) {
         ble.sendData(data);
-    }
+    }*/
 #endif
 }
 
@@ -80,6 +83,7 @@ void onSendData(const char* data) {
 void handleMessage(char header, const char* body) {
     // 将 BLEComm 提供的 header+body 转为协议字符串并交给解析器
     String message = String(header) + String(body);
+    Serial.printf("DEBUG: Received message: '%s'\n", message.c_str());
     protocol.processSerialMessage(message.c_str());
 }
 
