@@ -5,6 +5,12 @@
 #include "BLEComm.h"
 #include "../lib/protocol/lib/OpenBotProtocol.h"
 
+#if ENABLE_WIFI_DEBUG
+#include <WiFi.h>
+#include <WebServer.h>
+#include <ArduinoJson.h>
+#endif
+
 #define Serial Serial0
 
 // 功能开关
@@ -58,6 +64,15 @@ static int msgIdx = 0;
 // 新增: OpenBot 协议处理器
 OpenBotProtocol protocol;
 
+#if ENABLE_WIFI_DEBUG
+// WiFi配置 - 请根据实际环境修改
+const char* wifi_ssid = "TESLA";     
+const char* wifi_password = "12344321a";
+WebServer server(80);
+String lastCommand = "";
+String lastResult = "";
+#endif
+
 // 电机控制函数
 void updateMotorControl() {
     // 心跳超时检查
@@ -110,6 +125,11 @@ void onSendData(const char* data) {
     // 发送到串口
     Serial.print(data);
     
+#if ENABLE_WIFI_DEBUG
+    // 保存响应供Web界面使用
+    lastResult += String(data);
+#endif
+    
 #if (HAS_BLUETOOTH)
     // 发送到蓝牙（如果连接）
     // 暂时禁用BLE自动响应，避免spam
@@ -131,11 +151,134 @@ void handleMessage(char header, const char* body) {
     protocol.processSerialMessage(message.c_str());
 }
 
-// 测试协议解析
+#if ENABLE_WIFI_DEBUG
+// WiFi debug functions
+
+void setupWebServer() {
+    // 主页面 - 使用英文避免UTF-8编译问题
+    server.on("/", HTTP_GET, []() {
+        String html = "<!DOCTYPE html><html><head><title>OpenBot ESP32 Debug</title><style>";
+        html += "body{font-family:Arial,sans-serif;margin:40px;background:#f5f5f5;}";
+        html += ".container{max-width:800px;margin:0 auto;background:white;padding:20px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);}";
+        html += "h1{color:#333;text-align:center;}";
+        html += ".form-group{margin:20px 0;}";
+        html += "label{display:block;margin-bottom:5px;font-weight:bold;}";
+        html += "input[type='text']{width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:16px;}";
+        html += "button{background:#007bff;color:white;padding:10px 20px;border:none;border-radius:4px;cursor:pointer;font-size:16px;}";
+        html += "button:hover{background:#0056b3;}";
+        html += ".result{margin-top:20px;padding:15px;background:#f8f9fa;border:1px solid #e9ecef;border-radius:4px;}";
+        html += ".examples{margin-top:20px;}";
+        html += ".examples h3{color:#666;}";
+        html += ".examples ul{list-style-type:none;padding:0;}";
+        html += ".examples li{background:#e7f3ff;padding:8px;margin:5px 0;border-radius:4px;cursor:pointer;}";
+        html += ".examples li:hover{background:#d1ecf1;}";
+        html += "</style></head><body>";
+        html += "<div class='container'>";
+        html += "<h1>OpenBot ESP32 Debug Interface</h1>";
+        html += "<div class='form-group'>";
+        html += "<label for='command'>Enter Protocol Command:</label>";
+        html += "<input type='text' id='command' placeholder='e.g: c100,50 or l255,128' />";
+        html += "</div>";
+        html += "<button onclick='sendCommand()'>Send Command</button>";
+        html += "<div class='result' id='result'><strong>Result:</strong> Waiting for command...</div>";
+        html += "<div class='examples'>";
+        html += "<h3>Example Commands (click to fill):</h3>";
+        html += "<ul>";
+        html += "<li onclick='fillCommand(\"c100,50\")'>c100,50 - Motor Control (Left:100, Right:50)</li>";
+        html += "<li onclick='fillCommand(\"c0,0\")'>c0,0 - Stop Motors</li>";
+        html += "<li onclick='fillCommand(\"c-100,100\")'>c-100,100 - Turn Left in Place</li>";
+        html += "<li onclick='fillCommand(\"l255,128\")'>l255,128 - LED Control (Front:255, Back:128)</li>";
+        html += "<li onclick='fillCommand(\"i1,0\")'>i1,0 - Indicator Control (Left:On, Right:Off)</li>";
+        html += "<li onclick='fillCommand(\"h500\")'>h500 - Set Heartbeat Interval to 500ms</li>";
+        html += "<li onclick='fillCommand(\"f\")'>f - Query Features</li>";
+        html += "<li onclick='fillCommand(\"v1000\")'>v1000 - Set Voltage Query Interval to 1000ms</li>";
+        html += "</ul></div></div>";
+        html += "<script>";
+        html += "function fillCommand(cmd){document.getElementById('command').value=cmd;}";
+        html += "function sendCommand(){";
+        html += "const command=document.getElementById('command').value;";
+        html += "if(!command){alert('Please enter a command');return;}";
+        html += "fetch('/execute',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({command:command})})";
+        html += ".then(response=>response.json())";
+        html += ".then(data=>{";
+        html += "const resultDiv=document.getElementById('result');";
+        html += "resultDiv.innerHTML='<strong>Command:</strong> '+data.command+'<br><strong>Status:</strong> '+data.status+'<br><strong>Response:</strong> '+(data.response||'No response')+'<br><strong>Time:</strong> '+new Date().toLocaleString();";
+        html += "})";
+        html += ".catch(error=>{document.getElementById('result').innerHTML='<strong>Error:</strong> '+error.message;});";
+        html += "}";
+        html += "document.getElementById('command').addEventListener('keypress',function(e){if(e.key==='Enter'){sendCommand();}});";
+        html += "</script></body></html>";
+        
+        server.send(200, "text/html", html);
+    });
+    
+    // Execute command API
+    server.on("/execute", HTTP_POST, []() {
+        if (server.hasArg("plain")) {
+            String body = server.arg("plain");
+            DynamicJsonDocument doc(1024);
+            deserializeJson(doc, body);
+            
+            String command = doc["command"];
+            lastCommand = command;
+            lastResult = "";
+            
+            // Execute command
+            Serial.printf("WiFi Debug: Executing command: %s\n", command.c_str());
+            protocol.processSerialMessage(command.c_str());
+            
+            // Wait for processing result
+            delay(100);
+            
+            // Return result
+            DynamicJsonDocument response(1024);
+            response["command"] = command;
+            response["status"] = "executed";
+            response["response"] = lastResult.length() > 0 ? lastResult : "command sent";
+            
+            String responseStr;
+            serializeJson(response, responseStr);
+            server.send(200, "application/json", responseStr);
+        } else {
+            server.send(400, "application/json", "{\"error\":\"Invalid request\"}");
+        }
+    });
+    
+    server.begin();
+    Serial.println("Web server started on port 80");
+}
+
+void initWiFi() {
+    WiFi.begin(wifi_ssid, wifi_password);
+    Serial.print("Connecting to WiFi");
+    
+    int attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 30) {
+        delay(500);
+        Serial.print(".");
+        attempts++;
+    }
+    
+    if (WiFi.status() == WL_CONNECTED) {
+        Serial.println();
+        Serial.print("WiFi connected! IP address: ");
+        Serial.println(WiFi.localIP());
+        setupWebServer();
+    } else {
+        Serial.println("\nWiFi connection failed!");
+    }
+}
+
+void handleWebServer() {
+    server.handleClient();
+}
+#endif
+
+// Test protocol parsing
 void testProtocolParsing() {
     Serial.println("\n=== Protocol Parsing Test ===");
     
-    // 测试控制命令
+    // Test control commands
     Serial.println("Testing: c100,-50");
     protocol.processSerialMessage("c100,-50");
     
@@ -149,29 +292,35 @@ void testProtocolParsing() {
 }
 
 void setup() {
-    // 初始化串口
+    // Initialize serial
     Serial.begin(115200);
     Serial.println('r');
 
-    // 初始化电机控制
+    // Initialize motor control
     motors.init();
 
-    // 初始化传感器
+    // Initialize sensors
     // sensors.init();
 
-    // 初始化协议处理器并注册回调
+    // Initialize protocol processor and register callbacks
     protocol.init();
     protocol.setControlCallback(onControlCommand);
     protocol.setHeartbeatCallback(onHeartbeatCommand);
     protocol.setSendCallback(onSendData);
 
 #if (HAS_BLUETOOTH)
-    // 初始化蓝牙
+    // Initialize Bluetooth
     ble.init();
     ble.setMessageCallback(handleMessage);
 #endif
 
-    // 延迟3秒后测试协议解析
+#if ENABLE_WIFI_DEBUG
+    // Initialize WiFi debugging
+    Serial.println("Initializing WiFi debug...");
+    initWiFi();
+#endif
+
+    // Wait 3 seconds then test protocol parsing
     delay(3000);
     testProtocolParsing();
 }
@@ -187,6 +336,11 @@ void loop() {
 #if (HAS_BLUETOOTH)
     // 更新蓝牙连接状态
     ble.updateConnection();
+#endif
+
+#if ENABLE_WIFI_DEBUG
+    // Handle WiFi debug web requests
+    handleWebServer();
 #endif
 
     // 检查串口消息
