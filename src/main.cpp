@@ -3,6 +3,7 @@
 #include "MotorControl.h"
 #include "SensorControl.h"
 #include "BLEComm.h"
+#include "../lib/protocol/lib/OpenBotProtocol.h"
 
 #define Serial Serial0
 
@@ -37,33 +38,35 @@ BLEComm ble("OpenBot: DIY_ESP32");
 int ctrl_left = 0;
 int ctrl_right = 0;
 unsigned long heartbeat_time = 0;
-const unsigned long heartbeat_interval = 1000;
+unsigned long heartbeat_interval = 1000; // can be updated by protocol heartbeat
 
 // 串口消息处理变量
 static char header;
 static char msgBuf[60];
 static int msgIdx = 0;
 
-// 消息处理回调
-void handleMessage(char header, const char* body) {
-    switch (header) {
-        case 'c':  // 控制命令
-            {
-                char* ptr = strtok((char*)body, ",");
-                if (ptr != NULL) {
-                    ctrl_left = atoi(ptr);
-                    ptr = strtok(NULL, ",");
-                    if (ptr != NULL) {
-                        ctrl_right = atoi(ptr);
-                    }
-                }
-                heartbeat_time = millis();
-            }
-            break;
-        case 's':  // 传感器配置
-            // 传感器配置处理
-            break;
+// 新增: OpenBot 协议处理器
+OpenBotProtocol protocol;
+
+// =========== 协议回调函数 ===========
+void onControlCommand(const ControlCommand& cmd) {
+    ctrl_left  = cmd.left;
+    ctrl_right = cmd.right;
+    heartbeat_time = millis();
+}
+
+void onHeartbeatCommand(unsigned long interval) {
+    if (interval > 0) {
+        heartbeat_interval = interval;
     }
+    heartbeat_time = millis();
+}
+
+// 消息处理回调（BLEComm ➜ OpenBotProtocol）
+void handleMessage(char header, const char* body) {
+    // 将 BLEComm 提供的 header+body 转为协议字符串并交给解析器
+    String message = String(header) + String(body);
+    protocol.processSerialMessage(message.c_str());
 }
 
 void setup() {
@@ -76,6 +79,11 @@ void setup() {
 
     // 初始化传感器
     // sensors.init();
+
+    // 初始化协议处理器并注册回调
+    protocol.init();
+    protocol.setControlCallback(onControlCommand);
+    protocol.setHeartbeatCallback(onHeartbeatCommand);
 
 #if (HAS_BLUETOOTH)
     // 初始化蓝牙
@@ -116,7 +124,9 @@ void loop() {
             }
         } else {
             msgBuf[msgIdx - 1] = '\0';
-            handleMessage(header, msgBuf);
+            // 将串口收到的消息也交给协议解析器
+            String serialMsg = String(header) + String(msgBuf);
+            protocol.processSerialMessage(serialMsg.c_str());
             msgIdx = 0;
         }
     }
