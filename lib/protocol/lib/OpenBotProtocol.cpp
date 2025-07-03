@@ -40,10 +40,14 @@ void OpenBotProtocol::processSerialData(char data) {
 }
 
 void OpenBotProtocol::processSerialMessage(const char* message) {
-    if (strlen(message) < 2) return;
+    if (strlen(message) < 1) return;
     
     header = message[0];
-    strcpy(msgBuffer, message + 1);
+    if (strlen(message) > 1) {
+        strcpy(msgBuffer, message + 1);
+    } else {
+        msgBuffer[0] = '\0';  // 空消息体
+    }
     parseSerialMessage();
 }
 
