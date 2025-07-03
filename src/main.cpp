@@ -111,6 +111,24 @@ void onControlCommand(const ControlCommand& cmd) {
     motorState.lastUpdate = millis();
 }
 
+// Light command callback (l)
+void onLightCommand(const LightCommand& cmd) {
+    Serial.printf("Light Command - Front: %d, Back: %d\n", cmd.front, cmd.back);
+    // TODO: Control actual lights here
+}
+
+// Indicator command callback (i)
+void onIndicatorCommand(const IndicatorCommand& cmd) {
+    Serial.printf("Indicator Command - Left: %d, Right: %d\n", cmd.left, cmd.right);
+    // TODO: Control indicator GPIOs here
+}
+
+// Notification command callback (n)
+void onNotificationCommand(const NotificationCommand& cmd) {
+    Serial.printf("Notification Command - LED: %c, State: %d\n", cmd.led, cmd.state);
+    // TODO: Control notification LED
+}
+
 void onHeartbeatCommand(unsigned long interval) {
     if (interval > 0) {
         heartbeat_interval = interval;
@@ -305,7 +323,10 @@ void setup() {
     // Initialize protocol processor and register callbacks
     protocol.init();
     protocol.setControlCallback(onControlCommand);
+    protocol.setLightCallback(onLightCommand);
+    protocol.setIndicatorCallback(onIndicatorCommand);
     protocol.setHeartbeatCallback(onHeartbeatCommand);
+    protocol.setNotificationCallback(onNotificationCommand);
     protocol.setSendCallback(onSendData);
 
 #if (HAS_BLUETOOTH)
