@@ -50,6 +50,7 @@ OpenBotProtocol protocol;
 
 // =========== 协议回调函数 ===========
 void onControlCommand(const ControlCommand& cmd) {
+    Serial.printf("Motor Control via BLE - Left: %d, Right: %d\n", cmd.left, cmd.right);
     ctrl_left  = cmd.left;
     ctrl_right = cmd.right;
     heartbeat_time = millis();
@@ -82,6 +83,23 @@ void handleMessage(char header, const char* body) {
     protocol.processSerialMessage(message.c_str());
 }
 
+// 测试协议解析
+void testProtocolParsing() {
+    Serial.println("\n=== Protocol Parsing Test ===");
+    
+    // 测试控制命令
+    Serial.println("Testing: c100,-50");
+    protocol.processSerialMessage("c100,-50");
+    
+    Serial.println("Testing: c0,0");
+    protocol.processSerialMessage("c0,0");
+    
+    Serial.println("Testing: l255,128");
+    protocol.processSerialMessage("l255,128");
+    
+    Serial.println("=== Test Complete ===\n");
+}
+
 void setup() {
     // 初始化串口
     Serial.begin(115200);
@@ -104,6 +122,10 @@ void setup() {
     ble.init();
     ble.setMessageCallback(handleMessage);
 #endif
+
+    // 延迟3秒后测试协议解析
+    delay(3000);
+    testProtocolParsing();
 }
 
 void loop() {

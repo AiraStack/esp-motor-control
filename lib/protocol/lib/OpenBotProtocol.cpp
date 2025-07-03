@@ -129,7 +129,7 @@ void OpenBotProtocol::setSendCallback(SendCallback callback) {
 }
 
 bool OpenBotProtocol::isConnected() const {
-    return (millis() - lastHeartbeat) < 1000;  // 2秒内有心跳认为连接正常
+    return (millis() - lastHeartbeat) < 1000;  // 1秒内有心跳认为连接正常
 }
 
 unsigned long OpenBotProtocol::getLastHeartbeat() const {
