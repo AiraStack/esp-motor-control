@@ -62,6 +62,19 @@ void onHeartbeatCommand(unsigned long interval) {
     heartbeat_time = millis();
 }
 
+// 发送数据回调 - 同时发送到Serial0和BLE
+void onSendData(const char* data) {
+    // 发送到串口
+    Serial0.print(data);
+    
+#if (HAS_BLUETOOTH)
+    // 发送到蓝牙（如果连接）
+    if (ble.isConnected()) {
+        ble.sendData(data);
+    }
+#endif
+}
+
 // 消息处理回调（BLEComm ➜ OpenBotProtocol）
 void handleMessage(char header, const char* body) {
     // 将 BLEComm 提供的 header+body 转为协议字符串并交给解析器
@@ -84,6 +97,7 @@ void setup() {
     protocol.init();
     protocol.setControlCallback(onControlCommand);
     protocol.setHeartbeatCallback(onHeartbeatCommand);
+    protocol.setSendCallback(onSendData);
 
 #if (HAS_BLUETOOTH)
     // 初始化蓝牙
