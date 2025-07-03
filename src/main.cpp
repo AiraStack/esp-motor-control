@@ -65,7 +65,7 @@ void onHeartbeatCommand(unsigned long interval) {
 // 发送数据回调 - 同时发送到Serial0和BLE
 void onSendData(const char* data) {
     // 发送到串口
-    Serial0.print(data);
+    Serial.print(data);
     
 #if (HAS_BLUETOOTH)
     // 发送到蓝牙（如果连接）
@@ -109,7 +109,7 @@ void setup() {
 void loop() {
     // 每秒串口心跳
     static unsigned long lastSerialHeartbeat = 0;
-    if (millis() - lastSerialHeartbeat >= 1000) {
+    if (millis() - lastSerialHeartbeat >= 5000) {
         Serial.println("-- -- -- -- -- -- -- -- Heartbeat -- -- -- -- -- -- -- --");
         lastSerialHeartbeat = millis();
     }
@@ -117,11 +117,11 @@ void loop() {
 #if (HAS_BLUETOOTH)
     // 更新蓝牙连接状态
     ble.updateConnection();
-    // 每3秒蓝牙心跳
-    static unsigned long lastBLEHeartbeat = 0;
-    if (ble.isConnected() && millis() - lastBLEHeartbeat >= 3000) {
-        ble.sendData(">>>>>>>>>>>> BLE Heartbeat <<<<<<<<<<<<<\n");
-        lastBLEHeartbeat = millis();
+    // BLE连接状态显示
+    static bool wasConnected = false;
+    if (ble.isConnected() != wasConnected) {
+        wasConnected = ble.isConnected();
+        Serial.printf("BLE status: %s\n", wasConnected ? "CONNECTED" : "DISCONNECTED");
     }
 #endif
 
