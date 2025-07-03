@@ -9,7 +9,7 @@
 
 // 功能开关
 #define HAS_BLUETOOTH 1
-#define HAS_VOLTAGE_DIVIDER 1
+#define HAS_VOLTAGE_DIVIDER 0
 #define HAS_INDICATORS 1
 #define HAS_SONAR 1
 #define HAS_SPEED_SENSORS_FRONT 1
@@ -34,11 +34,21 @@ MotorControl motors(PIN_SPEED_LF, PIN_PWM_L1, PIN_PWM_L2, PIN_SPEED_RF, PIN_PWM_
 BLEComm ble("OpenBot: DIY_ESP32");
 #endif
 
-// 控制变量
-int ctrl_left = 0;
-int ctrl_right = 0;
 unsigned long heartbeat_time = 0;
 unsigned long heartbeat_interval = 1000; // can be updated by protocol heartbeat
+
+// 控制变量
+struct MotorState {
+    int left = 0;
+    int right = 0;
+    unsigned long lastUpdate = 0;
+    bool isActive() const {
+        return (millis() - lastUpdate) < heartbeat_interval;
+    }
+    void stop() {
+        left = right = 0;
+    }
+} motorState;
 
 // 串口消息处理变量
 static char header;
@@ -48,19 +58,49 @@ static int msgIdx = 0;
 // 新增: OpenBot 协议处理器
 OpenBotProtocol protocol;
 
+// 电机控制函数
+void updateMotorControl() {
+    // 心跳超时检查
+    if (!motorState.isActive()) {
+        motorState.stop();
+    }
+    
+    // 差分驱动控制
+    int left = motorState.left;
+    int right = motorState.right;
+    
+    if (left == 0 && right == 0) {
+        motors.stopMotors();
+    } else if (left == right) {
+        // 直线运动
+        if (left > 0) {
+            motors.moveForward(abs(left));
+        } else {
+            motors.moveBackward(abs(left));
+        }
+    } else {
+        // 转向运动 - 简化版，可根据需要改进
+        if (abs(left) > abs(right)) {
+            motors.turnLeft(abs(left - right));
+        } else {
+            motors.turnRight(abs(right - left));
+        }
+    }
+}
+
 // =========== 协议回调函数 ===========
 void onControlCommand(const ControlCommand& cmd) {
     Serial.printf("Motor Control via BLE - Left: %d, Right: %d\n", cmd.left, cmd.right);
-    ctrl_left  = cmd.left;
-    ctrl_right = cmd.right;
-    heartbeat_time = millis();
+    motorState.left = cmd.left;
+    motorState.right = cmd.right;
+    motorState.lastUpdate = millis();
 }
 
 void onHeartbeatCommand(unsigned long interval) {
     if (interval > 0) {
         heartbeat_interval = interval;
     }
-    heartbeat_time = millis();
+    motorState.lastUpdate = millis();
 }
 
 // 发送数据回调 - 同时发送到Serial0和BLE
@@ -81,9 +121,13 @@ void onSendData(const char* data) {
 
 // 消息处理回调（BLEComm ➜ OpenBotProtocol）
 void handleMessage(char header, const char* body) {
+    const char* realBody = body;
+    if (header == body[0]) {
+        realBody = body + 1;
+    }
     // 将 BLEComm 提供的 header+body 转为协议字符串并交给解析器
     String message = String(header) + String(body);
-    Serial.printf("DEBUG: Received message: '%s'\n", message.c_str());
+    Serial.printf(">>>>>>>>>> handleMessage: DEBUG: Received message: '%s', header: '%c', body: '%s'\n", message.c_str(), header, realBody);
     protocol.processSerialMessage(message.c_str());
 }
 
@@ -143,12 +187,6 @@ void loop() {
 #if (HAS_BLUETOOTH)
     // 更新蓝牙连接状态
     ble.updateConnection();
-    // BLE连接状态显示
-    static bool wasConnected = false;
-    if (ble.isConnected() != wasConnected) {
-        wasConnected = ble.isConnected();
-        Serial.printf("BLE status: %s\n", wasConnected ? "CONNECTED" : "DISCONNECTED");
-    }
 #endif
 
     // 检查串口消息
@@ -181,22 +219,11 @@ void loop() {
 
     // 检查心跳超时
     if ((millis() - heartbeat_time) >= heartbeat_interval) {
-        ctrl_left = 0;
-        ctrl_right = 0;
+        motorState.stop();
     }
 
     // 更新电机控制
-    if (ctrl_left > 0) {
-        motors.moveForward(ctrl_left);
-    } else if (ctrl_left < 0) {
-        motors.moveBackward(-ctrl_left);
-    } else if (ctrl_right > 0) {
-        motors.turnRight(ctrl_right);
-    } else if (ctrl_right < 0) {
-        motors.turnLeft(-ctrl_right);
-    } else {
-        motors.stopMotors();
-    }
+    updateMotorControl();
 
 #if (HAS_VOLTAGE_DIVIDER)
     // 更新电压监测
