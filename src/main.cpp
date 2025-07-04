@@ -66,18 +66,22 @@ OpenBotProtocol protocol;
 
 #if ENABLE_WIFI_DEBUG
 // WiFi配置 - 请根据实际环境修改
-const char* wifi_ssid = "TESLA";     
-const char* wifi_password = "12344321a";
+const char* wifi_ssid = "";     
+const char* wifi_password = "";
 WebServer server(80);
 String lastCommand = "";
 String lastResult = "";
+// 新增：用于web显示的全局变量
+String lastBleRaw = "";
+String lastParsedCmd = "";
+String lastMotorState = "";
 #endif
 
 // 电机控制函数
 void updateMotorControl() {
     // 心跳超时检查
     if (!motorState.isActive()) {
-        motorState.stop();
+        // motorState.stop();
     }
     
     // 差分驱动控制
@@ -96,9 +100,9 @@ void updateMotorControl() {
     } else {
         // 转向运动 - 简化版，可根据需要改进
         if (abs(left) > abs(right)) {
-            motors.turnLeft(abs(left - right));
+            motors.spinLeft(abs(left - right));
         } else {
-            motors.turnRight(abs(right - left));
+            motors.spinRight(abs(right - left));
         }
     }
 }
@@ -109,24 +113,37 @@ void onControlCommand(const ControlCommand& cmd) {
     motorState.left = cmd.left;
     motorState.right = cmd.right;
     motorState.lastUpdate = millis();
+#if ENABLE_WIFI_DEBUG
+    lastParsedCmd = String("ControlCommand: left=") + cmd.left + ", right=" + cmd.right;
+    lastMotorState = String("left=") + motorState.left + ", right=" + motorState.right;
+#endif
 }
 
 // Light command callback (l)
 void onLightCommand(const LightCommand& cmd) {
     Serial.printf("Light Command - Front: %d, Back: %d\n", cmd.front, cmd.back);
     // TODO: Control actual lights here
+#if ENABLE_WIFI_DEBUG
+    lastParsedCmd = String("LightCommand: front=") + cmd.front + ", back=" + cmd.back;
+#endif
 }
 
 // Indicator command callback (i)
 void onIndicatorCommand(const IndicatorCommand& cmd) {
     Serial.printf("Indicator Command - Left: %d, Right: %d\n", cmd.left, cmd.right);
     // TODO: Control indicator GPIOs here
+#if ENABLE_WIFI_DEBUG
+    lastParsedCmd = String("IndicatorCommand: left=") + cmd.left + ", right=" + cmd.right;
+#endif
 }
 
 // Notification command callback (n)
 void onNotificationCommand(const NotificationCommand& cmd) {
     Serial.printf("Notification Command - LED: %c, State: %d\n", cmd.led, cmd.state);
     // TODO: Control notification LED
+#if ENABLE_WIFI_DEBUG
+    lastParsedCmd = String("NotificationCommand: led=") + cmd.led + ", state=" + cmd.state;
+#endif
 }
 
 void onHeartbeatCommand(unsigned long interval) {
@@ -166,6 +183,9 @@ void handleMessage(char header, const char* body) {
     // 将 BLEComm 提供的 header+body 转为协议字符串并交给解析器
     String message = String(header) + String(body);
     Serial.printf(">>>>>>>>>> handleMessage: DEBUG: Received message: '%s', header: '%c', body: '%s'\n", message.c_str(), header, realBody);
+#if ENABLE_WIFI_DEBUG
+    lastBleRaw = message;
+#endif
     protocol.processSerialMessage(message.c_str());
 }
 
@@ -190,6 +210,8 @@ void setupWebServer() {
         html += ".examples ul{list-style-type:none;padding:0;}";
         html += ".examples li{background:#e7f3ff;padding:8px;margin:5px 0;border-radius:4px;cursor:pointer;}";
         html += ".examples li:hover{background:#d1ecf1;}";
+        html += ".status{margin-top:30px;padding:15px;background:#fffbe6;border:1px solid #ffe58f;border-radius:4px;}";
+        html += ".status h3{margin-bottom:5px;}";
         html += "</style></head><body>";
         html += "<div class='container'>";
         html += "<h1>OpenBot ESP32 Debug Interface</h1>";
@@ -210,7 +232,13 @@ void setupWebServer() {
         html += "<li onclick='fillCommand(\"h500\")'>h500 - Set Heartbeat Interval to 500ms</li>";
         html += "<li onclick='fillCommand(\"f\")'>f - Query Features</li>";
         html += "<li onclick='fillCommand(\"v1000\")'>v1000 - Set Voltage Query Interval to 1000ms</li>";
-        html += "</ul></div></div>";
+        html += "</ul></div>";
+        html += "<div class='status'>";
+        html += "<h3>BLE Raw Data:</h3><pre id='ble_raw'>N/A</pre>";
+        html += "<h3>Parsed Command:</h3><pre id='parsed_cmd'>N/A</pre>";
+        html += "<h3>Motor State:</h3><pre id='motor_state'>N/A</pre>";
+        html += "</div>";
+        html += "</div>";
         html += "<script>";
         html += "function fillCommand(cmd){document.getElementById('command').value=cmd;}";
         html += "function sendCommand(){";
@@ -225,6 +253,7 @@ void setupWebServer() {
         html += ".catch(error=>{document.getElementById('result').innerHTML='<strong>Error:</strong> '+error.message;});";
         html += "}";
         html += "document.getElementById('command').addEventListener('keypress',function(e){if(e.key==='Enter'){sendCommand();}});";
+        html += "setInterval(function(){fetch('/status').then(r=>r.json()).then(data=>{document.getElementById('ble_raw').innerText=data.ble_raw||'N/A';document.getElementById('parsed_cmd').innerText=data.parsed_cmd||'N/A';document.getElementById('motor_state').innerText=data.motor_state||'N/A';});},1000);";
         html += "</script></body></html>";
         
         server.send(200, "text/html", html);
@@ -260,6 +289,17 @@ void setupWebServer() {
         } else {
             server.send(400, "application/json", "{\"error\":\"Invalid request\"}");
         }
+    });
+    
+    // 新增 /status 路由
+    server.on("/status", HTTP_GET, []() {
+        DynamicJsonDocument doc(512);
+        doc["ble_raw"] = lastBleRaw;
+        doc["parsed_cmd"] = lastParsedCmd;
+        doc["motor_state"] = lastMotorState;
+        String json;
+        serializeJson(doc, json);
+        server.send(200, "application/json", json);
     });
     
     server.begin();
@@ -394,7 +434,7 @@ void loop() {
 
     // 检查心跳超时
     if ((millis() - heartbeat_time) >= heartbeat_interval) {
-        motorState.stop();
+        // motorState.stop();
     }
 
     // 更新电机控制
